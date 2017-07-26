@@ -77,7 +77,7 @@ def calculate_diis_SCF_energy(mol, n_el, e_conv, d_conv, basis):
     A.power(-0.5, 1.e-14)
     A = np.array(A)
 
-    print(A @ S @ A)
+    # print(A @ S @ A)
 
     D = calculate_density(H, A, n_el)
 
@@ -85,24 +85,18 @@ def calculate_diis_SCF_energy(mol, n_el, e_conv, d_conv, basis):
     F_old = None
     iteration = -1
     max_iter = 100
+    F_list = []
+    r_list = []
     while iteration < max_iter:
         iteration += 1
 
         J = np.einsum("pqrs,rs->pq", g, D)
         K = np.einsum("prqs,rs->pq", g, D)
 
-        if F_old is None:
-            F = H + 2.0 * J - K
-        else:
-            # FIXME: we need to calculate F in the DIIS way
-            F = H + 2.0 * J - K
+        F = H + 2.0 * J - K
+        r = (A.T @ (F @ D @ S - S @ D @ F) @ A)
 
-            r = (A.T @ (F @ D @ S - S @ D @ F) @ A)
-            # print("r is\n", r)
-
-        grad = F @ D @ S - S @ D @ F
-
-        grad_rms = np.mean(grad ** 2) ** 0.5
+        grad_rms = np.mean(r ** 2) ** 0.5
 
         E_electric = np.sum((F + H) * D)
         E_total = E_electric + mol.nuclear_repulsion_energy()
@@ -110,16 +104,36 @@ def calculate_diis_SCF_energy(mol, n_el, e_conv, d_conv, basis):
         E_diff = E_total - E_old
         E_old = E_total
         F_old = F
+        F_list.append(F)
+        r_list.append(r)
         if iteration == 0:
             print(" %12s  %16s  %10s  %10s" %
                   ("iteration", "E_total", "E_diff", "grad_rms"))
             print("---------------------------------------------------------")
         print(" %12d  %16.12f  %10.4e  %10.4e" %
-              (iteration, E_total, E_diff, grad_rms))
+              (iteration + 1, E_total, E_diff, grad_rms))
 
-        if E_diff < e_conv and grad_rms < d_conv:
+        if abs(E_diff) < e_conv and grad_rms < d_conv:
             print("Convergence reached!")
             break
+
+        if iteration > 1:
+            B = np.zeros([len(r_list) + 1, len(r_list) + 1])
+            B[:, -1] = -1
+            B[-1, :] = -1
+            B[-1, -1] = 0
+            for i in range(len(r_list)):
+                for j in range(len(r_list)):
+                    B[i, j] = np.vdot(r_list[i], r_list[j])
+
+            rhs = np.zeros(len(B))
+            rhs[-1] = -1
+
+            coeff = np.linalg.solve(B, rhs)
+
+            F = np.zeros_like(F)
+            for x in range(len(coeff) - 1):
+                F += coeff[x] * F_list[x]
 
         D = calculate_density(F, A, n_el)
 
@@ -145,3 +159,7 @@ if __name__ == "__main__":
     basis = "sto-3g"
 
     energy = calculate_diis_SCF_energy(mol, n_el, e_conv, d_conv, basis)
+    psi4.set_options({"scf_type": "pk"})
+    psi4_energy = psi4.energy("SCF/sto-3g", molecule=mol)
+
+    assert(np.allclose(psi4_energy, energy))
