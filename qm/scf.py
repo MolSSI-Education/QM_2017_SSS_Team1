@@ -6,6 +6,7 @@ import psi4
 np.set_printoptions(suppress=True, precision=4)
 psi4.core.set_output_file('output.dat', False)
 
+
 def diagonalize(F, A):
     """
     Diagonalize the Fock matrix
@@ -104,7 +105,7 @@ def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis):
         F_old = F
         if iteration == 0:
             print(" %12s  %16s  %10s  %10s" %
-                 ("iteration", "E_total", "E_diff", "grad_rms"))
+                  ("iteration", "E_total", "E_diff", "grad_rms"))
             print("---------------------------------------------------------")
         print(" %12d  %16.12f  %10.4e  %10.4e" %
               (iteration, E_total, E_diff, grad_rms))
