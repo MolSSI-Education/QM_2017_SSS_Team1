@@ -102,3 +102,4 @@ ENV/
 
 # psi4 output files
 timer.dat
+output.dat
