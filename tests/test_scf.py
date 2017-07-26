@@ -9,7 +9,7 @@ import pytest
 import numpy as np
 import psi4
 
-from QM_2017_SSS_Team1 import scf
+from qm import scf
 
 
 def test_calculate_basic_SCF_energy():
