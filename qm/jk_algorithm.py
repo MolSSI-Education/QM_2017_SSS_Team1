@@ -88,8 +88,29 @@ def calculate_JK_SCF_energy(mol, n_el, e_conv, d_conv, basis):
     while iteration < max_iter:
         iteration += 1
 
-        J = np.einsum("pqrs,rs->pq", g, D)
-        K = np.einsum("prqs,rs->pq", g, D)
+        #J = np.einsum("pqrs,rs->pq", g, D)
+        #K = np.einsum("prqs,rs->pq", g, D)
+     
+        #Get orbital basis from a Wavefunction object
+        orb = wfn.basisset()
+
+        #Build the complementary JKFIT basis for the aVDZ basis 
+        aux = psi4.core.BasisSet.build(mol, fitrole="JKFIT", other=basis)
+      
+        # The zero basis set
+        zero_bas = psi4.core.BasisSet.zero_ao_basis_set()
+
+        # Build instance of MintsHelper
+        mints = psi4.core.Mintshelper(orb)
+        
+        # Build (P|pq) raw 3-index ERIs, dimension (1, Naux, nbf, nbf)
+        Qls_tilde = mints.ao_eri(zero_bas, aux, zero_bas, aux)
+        Qls_tilde = np.squeeze(Qls_tilde) # remove the 1-dimensions
+       
+        # Build and invert Coulomb metric, dimension (1, Naux, 1, Naux)
+        metric = mints.ao_eri(zero_bas, aux, zero_bas, aux)
+        metric.power(-0.5, 1.e-14)
+        metric = np.squeeze(metric) # remove the 1-dimensions
 
         F = H + 2.0 * J - K
 
