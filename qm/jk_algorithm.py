@@ -38,7 +38,7 @@ def calculate_density(F, A, n_el):
     return Cocc @ Cocc.T
 
 
-def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis):
+def calculate_JK_SCF_energy(mol, n_el, e_conv, d_conv, basis):
     """
     Calculate the energy of a molecule using a basic SCF algorithm
 
@@ -121,3 +121,19 @@ def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis):
         print("SCF has finished!")
 
     return E_total
+
+if __name__ == "__main__":
+    mol = psi4.geometry("""
+    O
+    H 1 1.1
+    H 1 1.1 2 104
+    """)
+
+    n_el = 5
+
+    e_conv = 1.e-6
+    d_conv = 1.e-6
+
+    basis = "sto-3g"
+
+    energy = calculate_JK_SCF_energy(mol, n_el, e_conv, d_conv, basis)
