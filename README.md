@@ -2,3 +2,6 @@
 [![codecov](https://codecov.io/gh/ohamto/QM_2017_SSS_Team1/branch/master/graph/badge.svg)](https://codecov.io/gh/ohamto/QM_2017_SSS_Team1)
 
 # QM_2017_SS_Team1
+
+### Install instructions
+To install in place, type "pip install -e ."
