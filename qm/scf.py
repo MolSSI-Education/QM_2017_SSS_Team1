@@ -110,7 +110,7 @@ def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis):
         print(" %12d  %16.12f  %10.4e  %10.4e" %
               (iteration, E_total, E_diff, grad_rms))
 
-        if E_diff < e_conv and grad_rms < d_conv:
+        if abs(E_diff) < e_conv and grad_rms < d_conv:
             print("Convergence reached!")
             break
 
