@@ -95,7 +95,7 @@ def calculate_JK_SCF_energy(mol, n_el, e_conv, d_conv, basis):
     orb = wfn.basisset()
 
     #Build the complementary JKFIT basis for the aVDZ basis
-    aux = psi4.core.BasisSet.build(mol, fitrole="JKFIT", other=basis)
+    aux = psi4.core.BasisSet.build(mol, "DF_BASIS_SCF", fitrole="JKFIT", other=basis)
 
     # The zero basis set
     zero_bas = psi4.core.BasisSet.zero_ao_basis_set()
