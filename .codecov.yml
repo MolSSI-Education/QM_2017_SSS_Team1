@@ -2,7 +2,8 @@ comment:
   layout: header, changes, diff
 coverage:
   ignore:
-    - test/.*
+    - tests/*
+    - dgemm_tests/*
     - setup.py
   status:
     patch: false
