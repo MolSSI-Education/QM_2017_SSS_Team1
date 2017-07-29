@@ -103,3 +103,6 @@ ENV/
 # psi4 output files
 timer.dat
 output.dat
+
+# Don't keep vim .swp files
+*.swp
