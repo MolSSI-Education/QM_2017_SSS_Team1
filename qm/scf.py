@@ -39,7 +39,7 @@ def calculate_density(F, A, n_el):
     return Cocc @ Cocc.T
 
 
-def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis):
+def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis, diis=True):
     """
     Calculate the energy of a molecule using a basic SCF algorithm
 
@@ -77,7 +77,7 @@ def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis):
     A.power(-0.5, 1.e-14)
     A = np.array(A)
 
-    print(A @ S @ A)
+#    print(A @ S @ A)
 
     D = calculate_density(H, A, n_el)
 
@@ -85,6 +85,8 @@ def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis):
     F_old = None
     iteration = -1
     max_iter = 100
+    F_list = []
+    grad_list = []
     while iteration < max_iter:
         iteration += 1
 
@@ -93,7 +95,11 @@ def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis):
 
         F = H + 2.0 * J - K
 
-        grad = F @ D @ S - S @ D @ F
+        if diis:
+            grad = (A.T @ (F @ D @ S - S @ D @ F) @ A)
+
+        else:
+            grad = F @ D @ S - S @ D @ F
 
         grad_rms = np.mean(grad ** 2) ** 0.5
 
@@ -103,6 +109,8 @@ def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis):
         E_diff = E_total - E_old
         E_old = E_total
         F_old = F
+        F_list.append(F)
+        grad_list.append(grad)
         if iteration == 0:
             print(" %12s  %16s  %10s  %10s" %
                   ("iteration", "E_total", "E_diff", "grad_rms"))
@@ -114,6 +122,24 @@ def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis):
             print("Convergence reached!")
             break
 
+        if diis and (iteration > 1):
+            B = np.zeros([len(grad_list) + 1, len(grad_list) + 1])
+            B[:, -1] = -1
+            B[-1, :] = -1
+            B[-1, -1] = 0
+            for i in range(len(grad_list)):
+                for j in range(len(grad_list)):
+                    B[i, j] = np.vdot(grad_list[i], grad_list[j])
+
+            rhs = np.zeros(len(B))
+            rhs[-1] = -1
+
+            coeff = np.linalg.solve(B, rhs)
+
+            F = np.zeros_like(F)
+            for x in range(len(coeff) - 1):
+                F += coeff[x] * F_list[x]
+
         D = calculate_density(F, A, n_el)
 
     if iteration >= max_iter and (E_diff >= e_conv or grad_rms >= d_conv):
@@ -122,6 +148,7 @@ def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis):
         print("SCF has finished!")
 
     return E_total
+
 
 if __name__ == "__main__":
     mol = psi4.geometry("""
@@ -137,4 +164,4 @@ if __name__ == "__main__":
 
     basis = "sto-3g"
 
-    energy = calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis)
+    energy = calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis, diis=False)
