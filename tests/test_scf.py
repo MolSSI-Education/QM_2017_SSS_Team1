@@ -9,7 +9,6 @@ import pytest
 import numpy as np
 import psi4
 
-from qm import diis
 from qm import scf
 
 
@@ -51,7 +50,8 @@ def test_calculate_diis_SCF_energy():
 
     basis = "sto-3g"
 
-    energy = diis.calculate_diis_SCF_energy(mol, n_el, e_conv, d_conv, basis)
+    energy = scf.calculate_basic_SCF_energy(mol, n_el, e_conv,
+                                            d_conv, basis, diis=True)
     psi4.set_options({"scf_type": "pk"})
     psi4_energy = psi4.energy("SCF/sto-3g", molecule=mol)
 
