@@ -39,7 +39,8 @@ def calculate_density(F, A, n_el):
     return Cocc @ Cocc.T
 
 
-def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis, diis=True):
+def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis, diis=True,
+                               density_fitting=True):
     """
     Calculate the energy of a molecule using a basic SCF algorithm
 
@@ -55,6 +56,12 @@ def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis, diis=True):
 
     mol.update_geometry()
     mol.print_out()
+
+    if density_fitting:
+        psi4.set_options({'basis': basis,
+                          'scf_type': 'df',
+                          'e_convergence': 1e-10,
+                          'd_convergence': 1e-10})
 
     bas = psi4.core.BasisSet.build(mol, target=basis)
 
@@ -81,6 +88,35 @@ def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis, diis=True):
 
     D = calculate_density(H, A, n_el)
 
+    if density_fitting:
+        #Get orbital basis from a Wavefunction object
+        wfn = psi4.core.Wavefunction.build(
+                mol,
+                psi4.core.get_global_option('basis')
+        )
+        orb = wfn.basisset()
+
+        #Build the complementary JKFIT basis for the aVDZ basis
+        aux = psi4.core.BasisSet.build(mol, "DF_BASIS_SCF", fitrole="JKFIT",
+                                       other=basis)
+
+        # The zero basis set
+        zero_bas = psi4.core.BasisSet.zero_ao_basis_set()
+
+        # Build instance of MintsHelper
+        mints = psi4.core.MintsHelper(orb)
+
+        # Build (P|pq) raw 3-index ERIs, dimension (1, Naux, nbf, nbf)
+        Ppq = mints.ao_eri(zero_bas, aux, orb, orb)
+        Ppq = np.squeeze(Ppq) # remove the 1-dimensions
+
+        # Build and invert Coulomb metric, dimension (1, Naux, 1, Naux)
+        metric = mints.ao_eri(zero_bas, aux, zero_bas, aux)
+        metric.power(-0.5, 1.e-14)
+        metric = np.squeeze(metric) # remove the 1-dimensions
+
+        Qpq = np.einsum('QP,Ppq->Qpq', metric, Ppq)
+
     E_old = 0.0
     F_old = None
     iteration = -1
@@ -90,8 +126,18 @@ def calculate_basic_SCF_energy(mol, n_el, e_conv, d_conv, basis, diis=True):
     while iteration < max_iter:
         iteration += 1
 
-        J = np.einsum("pqrs,rs->pq", g, D)
-        K = np.einsum("prqs,rs->pq", g, D)
+        if density_fitting:
+            # Two-step build of J with Qpq and D
+            X_Q = np.einsum('Qpq,pq->Q', Qpq, D)
+            J = np.einsum('Qpq,Q->pq', Qpq, X_Q)
+
+            # Two-step build of K with Qpq and D
+            Z_Qqr = np.einsum('Qrs,sq->Qrq', Qpq, D)
+            K = np.einsum('Qpq,Qrq->pr', Qpq, Z_Qqr)
+
+        else:
+            J = np.einsum("pqrs,rs->pq", g, D)
+            K = np.einsum("prqs,rs->pq", g, D)
 
         F = H + 2.0 * J - K
 
