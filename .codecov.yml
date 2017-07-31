@@ -2,6 +2,9 @@ comment:
   layout: header, changes, diff
 coverage:
   ignore:
+    - qm/CMakeLists.txt
+    - qm/jk_cpp.py
+    - qm/tensor_mult_numpy.cpp
     - tests/*
     - dgemm_tests/*
     - setup.py
