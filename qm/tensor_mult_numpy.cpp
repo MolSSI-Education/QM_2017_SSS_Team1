@@ -31,7 +31,7 @@ py::array_t<double> tensor_mult_numpy_J(py::array_t<double>& t1,
 
     std::vector<double> result(len_p * len_q);
 
-#pragma omp parallel for schedule(dynamic) num_threads(4)
+#pragma omp parallel for schedule(dynamic) num_threads(2)
     for (size_t p = 0; p < len_p; ++p) {
         for (size_t q = 0; q <= p; ++q) {
             double val = 0.0;
@@ -75,7 +75,7 @@ py::array_t<double> tensor_mult_numpy_K(py::array_t<double>& t1,
 
     std::vector<double> result(len_p * len_q);
 
-#pragma omp parallel for schedule(dynamic) num_threads(4)
+#pragma omp parallel for schedule(dynamic) num_threads(2)
     for (size_t p = 0; p < len_p; ++p) {
         for (size_t q = 0; q <= p; ++q) {
             double val = 0.0;
