@@ -6,6 +6,7 @@ coverage:
     - qm/jk_cpp.py
     - qm/tensor_mult_numpy.cpp
     - tests/*
+    - openmp_tests/*
     - dgemm_tests/*
     - setup.py
   status:
