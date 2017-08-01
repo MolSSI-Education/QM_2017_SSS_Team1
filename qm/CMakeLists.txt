@@ -30,6 +30,8 @@ find_package(pybind11 CONFIG REQUIRED
 
 message(STATUS "Found pybind11: ${pybind11_CONFIG}")
 
+set(CMAKE_CXX_FLAGS "-std=c++11 -O3 -fopenmp ${CMAKE_CXX_FLAGS}")
+
 # Creates a python module named "module_name"
 
 pybind11_add_module(tensor_mult_numpy MODULE tensor_mult_numpy.cpp)

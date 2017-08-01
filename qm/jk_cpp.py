@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 
 import numpy as np
+from timeit import default_timer as timer
+
 import psi4
 
 import tensor_mult_numpy as tmn
+
+# Clean up printing a little bit
+np.set_printoptions(suppress=True, precision=4)
+psi4.core.set_output_file('output.dat', False)
 
 # Make sure we get the same random array
 np.random.seed(0)
@@ -33,13 +39,24 @@ D = (D + D.T) / 2
 
 # Reference
 J_ref = np.einsum("pqrs,rs->pq", I, D)
-J = tmn.tensor_mult_numpy_J(I,D)
+
+numAttempts = 20
+average = 0.0
+for i in range(numAttempts):
+    start = timer()
+    J = tmn.tensor_mult_numpy_J(I,D)
+    end = timer()
+    average += (end - start) * 1.e6
+
+average /= numAttempts
+
+print("Average time for J out of", numAttempts, "attempts:", average, "us")
 
 K_ref = np.einsum("prqs,rs->pq", I, D)
 K = tmn.tensor_mult_numpy_K(I,D)
 
-print("K_ref is\n", K_ref)
-print("K is\n", K)
+#print("K_ref is\n", K_ref)
+#print("K is\n", K)
 
 ############## OUR STUFF STARTS HERE ##########################
 # Your implementation

@@ -28,6 +28,7 @@ py::array_t<double> tensor_mult_numpy_J(py::array_t<double>& t1,
 
     std::vector<double> result(len_p * len_q);
 
+#pragma omp parallel for schedule(dynamic)
     for (size_t p = 0; p < len_p; ++p) {
         for (size_t q = 0; q < len_q; ++q) {
             double val = 0.0;
