@@ -3,6 +3,7 @@
 #include <pybind11/numpy.h>
 #include <string>
 #include <iostream>
+#include <omp.h>
 
 namespace py = pybind11;
 
@@ -28,16 +29,18 @@ py::array_t<double> tensor_mult_numpy_J(py::array_t<double>& t1,
 
     std::vector<double> result(len_p * len_q);
 
-#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic) num_threads(4)
     for (size_t p = 0; p < len_p; ++p) {
-        for (size_t q = 0; q < len_q; ++q) {
+        for (size_t q = 0; q <= p; ++q) {
             double val = 0.0;
             for (size_t r = 0; r < len_r; ++r) {
                 for (size_t s = 0; s < len_s; ++s) {
                     val += t1_data[p * len_q * len_r * len_s + q * len_r * len_s + r * len_s + s] * t2_data[r * len_s + s];
                 }
             }
+            // Take advantage of symmetry across the diagonal
             result[p*len_q + q] = val;
+            result[q*len_q + p] = val;
         }
     }
 
@@ -72,15 +75,18 @@ py::array_t<double> tensor_mult_numpy_K(py::array_t<double>& t1,
 
     std::vector<double> result(len_p * len_q);
 
+#pragma omp parallel for schedule(dynamic) num_threads(4)
     for (size_t p = 0; p < len_p; ++p) {
-        for (size_t q = 0; q < len_q; ++q) {
+        for (size_t q = 0; q <= p; ++q) {
             double val = 0.0;
             for (size_t r = 0; r < len_r; ++r) {
                 for (size_t s = 0; s < len_s; ++s) {
                     val += t1_data[p * len_r * len_q * len_s + r * len_q * len_s + q * len_s + s] * t2_data[r * len_s + s];
                 }
             }
+            // Take advantage of symmetry across the diagonal
             result[p*len_q + q] = val;
+            result[q*len_q + p] = val;
         }
     }
 
