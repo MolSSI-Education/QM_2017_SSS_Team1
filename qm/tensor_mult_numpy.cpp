@@ -5,6 +5,8 @@
 #include <iostream>
 #include <omp.h>
 
+#include<lawrap/blas.h>
+
 namespace py = pybind11;
 
 void print_arg(const std::string& s)
@@ -34,9 +36,7 @@ py::array_t<double> tensor_mult_numpy_J(py::array_t<double>& t1,
         for (size_t q = 0; q <= p; ++q) {
             double val = 0.0;
             for (size_t r = 0; r < len_r; ++r) {
-                for (size_t s = 0; s < len_s; ++s) {
-                    val += t1_data[p * len_q * len_r * len_s + q * len_r * len_s + r * len_s + s] * t2_data[r * len_s + s];
-                }
+                val += LAWrap::dotc(len_s, &t1_data[p * len_q * len_r * len_s + q * len_r * len_s + r * len_s], 1, &t2_data[r * len_s], 1);
             }
             // Take advantage of symmetry across the diagonal
             result[p*len_q + q] = val;
@@ -80,9 +80,7 @@ py::array_t<double> tensor_mult_numpy_K(py::array_t<double>& t1,
         for (size_t q = 0; q <= p; ++q) {
             double val = 0.0;
             for (size_t r = 0; r < len_r; ++r) {
-                for (size_t s = 0; s < len_s; ++s) {
-                    val += t1_data[p * len_r * len_q * len_s + r * len_q * len_s + q * len_s + s] * t2_data[r * len_s + s];
-                }
+                val += LAWrap::dotc(len_s, &t1_data[p * len_r * len_q * len_s + r * len_q * len_s + q * len_s], 1, &t2_data[r * len_s], 1);
             }
             // Take advantage of symmetry across the diagonal
             result[p*len_q + q] = val;
