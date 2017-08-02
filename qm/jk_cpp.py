@@ -22,7 +22,7 @@ H 1 1.1 2 104
 """)
 
 # Build a ERI tensor
-basisname = "sto-3g"
+basisname = "cc-pvtz"
 psi4.set_options({'basis': basisname,
                   'scf_type': 'df',
                   'e_convergence': 1e-10,
@@ -40,20 +40,35 @@ D = (D + D.T) / 2
 # Reference
 J_ref = np.einsum("pqrs,rs->pq", I, D)
 
-numAttempts = 20
+numAttempts = 1000
 average = 0.0
 for i in range(numAttempts):
     start = timer()
     J = tmn.tensor_mult_numpy_J(I,D)
     end = timer()
-    average += (end - start) * 1.e6
+    average += (end - start)
 
+#print("J_ref is\n",J_ref)
+#print("J is\n",J)
+
+average *= 1.e6
 average /= numAttempts
 
-print("Average time for J out of", numAttempts, "attempts:", average, "us")
+print("Average time for J out of", numAttempts, "attempts:", average, "ms")
 
 K_ref = np.einsum("prqs,rs->pq", I, D)
-K = tmn.tensor_mult_numpy_K(I,D)
+
+average = 0.0
+for i in range(numAttempts):
+    start = timer()
+    K = tmn.tensor_mult_numpy_K(I,D)
+    end = timer()
+    average += (end - start)
+
+average *= 1.e6
+average /= numAttempts
+
+print("Average time for K out of", numAttempts, "attempts:", average, "ms")
 
 #print("K_ref is\n", K_ref)
 #print("K is\n", K)
